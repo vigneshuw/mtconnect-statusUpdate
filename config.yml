@@ -1,0 +1,41 @@
+AWS:
+  logging_directory: /home/minlab/mtconnect-statusUpdate/logs/aws
+  endpoint_url: a3r5ud4y7va9gp-ats.iot.us-east-1.amazonaws.com
+  cert: /home/minlab/mtconnect-statusUpdate/aws_certs/device.pem.crt
+  key: /home/minlab/mtconnect-statusUpdate/aws_certs/private.pem.key
+  root_ca: /home/minlab/mtconnect-statusUpdate/aws_certs/AmazonRootCA1.pem
+  client_id: mtcagent_MINLab
+  shadow_name: mtcagent
+
+adapter:
+  machine_name: FANUC_ROBONANO
+  devices_xml:
+    # ComponentStream level
+    Controller:
+      Events:
+        - EmergencyStop
+        - Message
+    Path:
+      Samples:
+        PathFeedrate:
+          - ACTUAL
+          - OVERRIDE
+          - COMMANDED
+    Linear:
+      Samples:
+        Position:
+          - ACTUAL
+        Load:
+          - ACTUAL
+    Rotary:
+      Samples:
+        Angle:
+          - ACTUAL
+        Load:
+          - ACTUAL
+
+agent:
+  url: http://localhost:5001/current
+
+logging:
+  logging_directory: /home/minlab/mtconnect-statusUpdate/logs/mtc-statusUpdate
