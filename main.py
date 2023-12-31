@@ -6,6 +6,7 @@ import awscrt.exceptions
 import sys
 import argparse
 import yaml
+import signal
 import logging.config
 from uuid import uuid4
 from datetime import date
@@ -14,6 +15,20 @@ from awscrt import io as aws_io, mqtt
 from awsiot import mqtt_connection_builder, iotshadow
 from MQTT.mqtt_device_shadows import DeviceShadows, LockedDeviceState
 from Machine.monitoring import MachineStateMonitor
+
+
+def manage_ctrlc(*args):
+
+    # Reset the shadow
+    global ds, exit_main
+
+    # Change shadow value to init
+    ds.change_shadow_value({"upload_enable": 0})
+    exit_main = True
+
+
+# Pressing Ctrl+C will call the function `manage_ctrlc` for child process wrap-up
+signal.signal(signal.SIGINT, manage_ctrlc)
 
 
 def initialize_device_shadows(cp):
@@ -212,6 +227,7 @@ if __name__ == '__main__':
     start_timer = time.time()
     # Initiate by stopping upload
     ds.change_shadow_value({"upload_enable": 0})
+    exit_main = False
     while True:
 
         # Get the shadow state
@@ -249,5 +265,10 @@ if __name__ == '__main__':
         else:
             time.sleep(5.0)
             start_timer = time.time()
+
+        # Break the loop and exit
+        if exit_main:
+            logger.info(f"Exiting process with PID-{main_process_pid}")
+            break
 
 
