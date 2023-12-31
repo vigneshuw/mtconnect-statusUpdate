@@ -1,0 +1,12 @@
+[Unit]
+Description=MTConnect MQTT Service
+
+[Service]
+Restart=always
+User=minlab
+ExecStart=/home/minlab/mtconnect-statusUpdate/start_daq.sh
+ExecStop=/home/minlab/mtconnect-statusUpdate/stop_daq.sh
+WorkingDirectory=/home/minlab/mtconnect-statusUpdate
+
+[Install]
+WantedBy=default.target

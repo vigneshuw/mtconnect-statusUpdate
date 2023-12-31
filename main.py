@@ -240,11 +240,9 @@ if __name__ == '__main__':
             # Sleep for a while
             time.sleep(1.0)
             end_timer = time.time()
-            print(end_timer - start_timer)
 
             # Shutdown data transfer after an hour
             if end_timer - start_timer > 1800:
-                print("New Stopping")
                 start_upload = False
                 ds.change_shadow_value({"upload_enable": 0})
 

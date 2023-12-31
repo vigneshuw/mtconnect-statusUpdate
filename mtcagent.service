@@ -1,0 +1,11 @@
+[Unit]
+Description=MTConnectAgent Container
+Requires=docker.service
+After=docker.service
+
+[Service]
+ExecStart=/usr/bin/docker start -a agent
+ExecStop=/usr/bin/docker stop agent
+
+[Install]
+WantedBy=default.target
