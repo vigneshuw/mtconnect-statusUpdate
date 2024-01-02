@@ -94,7 +94,7 @@ def monitor_adapter_ip():
 def periodically_check_adpater_ip():
     while True:
         monitor_adapter_ip()
-        time.sleep(10)
+        time.sleep(60 * 60 * 6)
 
 
 def exit_process(code):
