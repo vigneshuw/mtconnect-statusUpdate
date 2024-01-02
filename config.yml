@@ -36,6 +36,12 @@ adapter:
 
 agent:
   url: http://localhost:5001/current
+  cfg_file: /home/minlab/mtconnect/conf/agent.cfg
+
+SSM:
+  topic_ssm_params: getParams/systemsManager
+  nodeID: mi-09e03022fe36802b3
+  execution_type: AWS-RunShellScript
 
 logging:
   logging_directory: /home/minlab/mtconnect-statusUpdate/logs/mtc-statusUpdate

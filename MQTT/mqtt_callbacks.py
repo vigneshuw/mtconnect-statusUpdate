@@ -4,9 +4,10 @@ from awsiot import mqtt
 
 
 class MqttCallbacks:
-    def __init__(self, params, logger):
+    def __init__(self, params, logger, threading_event):
         self.params = params
         self.logger = logger
+        self.threading_event = threading_event
 
     def on_connection_interrupted(self, connection, error, **kwargs):
         self.logger.warn("Connection interrupted. Error: {}".format(error))
@@ -38,11 +39,12 @@ class MqttCallbacks:
 
         # Put the payload in queue
         self.params = payload
+        self.threading_event.set()
 
     def on_connection_success(self, connection, callback_data):
         assert isinstance(callback_data, mqtt.OnConnectionSuccessData)
-        self.logger.info("Connection Successful with return code: {} session present: {}".format(callback_data.return_code,
-                                                                                      callback_data.session_present))
+        self.logger.info("Connection Successful with return code: {} session present: {}".format(
+            callback_data.return_code, callback_data.session_present))
 
     # Callback when a connection attempt fails
     def on_connection_failure(self, connection, callback_data):

@@ -2,6 +2,7 @@ import os
 import time
 import json
 import requests
+import threading
 import awscrt.exceptions
 import sys
 import argparse
@@ -26,9 +27,52 @@ def manage_ctrlc(*args):
     ds.change_shadow_value({"upload_enable": 0})
     exit_main = True
 
+    # TODO: Close MQTT Connections
+
 
 # Pressing Ctrl+C will call the function `manage_ctrlc` for child process wrap-up
 signal.signal(signal.SIGINT, manage_ctrlc)
+subscribe_receiving_event = threading.Event()
+
+
+def get_adapter_ip_from_ssm(topic_ssm_params, ssm_params_payload):
+
+    global subscribe_receiving_event, callbacks
+    # Clear the event
+    subscribe_receiving_event.clear()
+
+    print(topic_ssm_params)
+    mqtt_connection.publish(
+        topic=topic_ssm_params,
+        payload=json.dumps(ssm_params_payload),
+        qos=mqtt.QoS.AT_LEAST_ONCE
+    )
+    # Wait until you receive a message
+    while not subscribe_receiving_event.is_set():
+        pass
+
+    adapter_ip_ssm = callbacks.params
+    return adapter_ip_ssm
+
+
+def validate_adapter_ip(adapter_ip, adapter_ip_ssm, agent_cfg_path):
+
+    if adapter_ip != adapter_ip_ssm:
+        with open(agent_cfg_path, "r") as filehandle:
+            modified_config = ""
+            for line in filehandle.readlines():
+                if "Host" in line:
+                    new_line = line.replace(adapter_ip, adapter_ip_ssm)
+                    modified_config += new_line
+                else:
+                    modified_config += line
+
+        # TODO: Update the agent conf file
+        # with open(agent_cfg_path, "w") as filehandle:
+        #     filehandle.write(modified_config)
+        print(modified_config)
+    else:
+        return
 
 
 def initialize_device_shadows(cp):
@@ -156,7 +200,7 @@ if __name__ == '__main__':
     topic_params_download = "params/" + client_id
     # Get all the callbacks
     set_aws_params = None
-    callbacks = MqttCallbacks(set_aws_params, logger)
+    callbacks = MqttCallbacks(set_aws_params, logger, subscribe_receiving_event)
 
     # Initialize AWS Connection
     try:
@@ -208,6 +252,26 @@ if __name__ == '__main__':
                        shadow_thing_name=connection_params["shadow_thing_name"],
                        shadow_client=shadow_client)
     initialize_device_shadows(cp=connection_params)
+
+    # Get the adapter IP address
+    # TODO: Improve the way Host is identified
+    agent_conf_file = config["agent"]["cfg_file"]
+    with open(agent_conf_file, "r") as filehandle:
+        agent_conf = filehandle.readlines()
+        for conf in agent_conf:
+            if "Host" in conf:
+                adapter_ip = conf.strip().split("=")[-1].strip()
+    # Get the IP address from SSM
+    # Send a MQTT message for the Lambda to process
+    topic_ssm_params = config["SSM"]["topic_ssm_params"] + "/" + client_id
+    ssm_params_payload = {
+        "nodeID": config["SSM"]["nodeID"],
+        "execution_type": config["SSM"]["execution_type"]
+    }
+    adapter_ip_ssm = get_adapter_ip_from_ssm(topic_ssm_params, ssm_params_payload)
+    print(adapter_ip_ssm)
+    validate_adapter_ip(adapter_ip, adapter_ip_ssm, agent_conf_file)
+    sys.exit(0)
 
     # Initialize Machine Monitoring
     # Collect the params
