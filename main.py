@@ -1,4 +1,5 @@
 import os
+import re
 import time
 import json
 import requests
@@ -21,13 +22,15 @@ from Machine.monitoring import MachineStateMonitor
 def manage_ctrlc(*args):
 
     # Reset the shadow
-    global ds, exit_main
+    global ds, exit_main, mqtt_connection
 
     # Change shadow value to init
     ds.change_shadow_value({"upload_enable": 0})
     exit_main = True
 
     # TODO: Close MQTT Connections
+    disconnect_future = mqtt_connection.disconnect()
+    disconnect_future.result()
 
 
 # Pressing Ctrl+C will call the function `manage_ctrlc` for child process wrap-up
@@ -41,7 +44,6 @@ def get_adapter_ip_from_ssm(topic_ssm_params, ssm_params_payload):
     # Clear the event
     subscribe_receiving_event.clear()
 
-    print(topic_ssm_params)
     mqtt_connection.publish(
         topic=topic_ssm_params,
         payload=json.dumps(ssm_params_payload),
@@ -55,7 +57,23 @@ def get_adapter_ip_from_ssm(topic_ssm_params, ssm_params_payload):
     return adapter_ip_ssm
 
 
+def exit_process(code):
+    manage_ctrlc()
+    sys.exit(code)
+
+
 def validate_adapter_ip(adapter_ip, adapter_ip_ssm, agent_cfg_path):
+
+    # Make sure both the arguments are valid ip addresses
+    pattern = r'^\d+$'
+    for number in adapter_ip.split("."):
+        if not bool(re.match(pattern, number)):
+            logger.warn("Invalid adapter ip addresses from agent_cfg")
+            exit_process(1)
+    for number in adapter_ip_ssm.split("."):
+        if not bool(re.match(pattern, number)):
+            logger.warn("Invalid adapter ip addresses from SSM  mamanger")
+            exit_process(1)
 
     if adapter_ip != adapter_ip_ssm:
         with open(agent_cfg_path, "r") as filehandle:
@@ -67,11 +85,12 @@ def validate_adapter_ip(adapter_ip, adapter_ip_ssm, agent_cfg_path):
                 else:
                     modified_config += line
 
-        # TODO: Update the agent conf file
-        # with open(agent_cfg_path, "w") as filehandle:
-        #     filehandle.write(modified_config)
-        print(modified_config)
+        with open(agent_cfg_path, "w") as filehandle:
+            filehandle.write(modified_config)
+        logger.info(f"IP addresses have been updated from {adapter_ip} to {adapter_ip_ssm}")
+        time.sleep(60)
     else:
+        logger.info("IP addresses matches")
         return
 
 
@@ -266,12 +285,21 @@ if __name__ == '__main__':
     topic_ssm_params = config["SSM"]["topic_ssm_params"] + "/" + client_id
     ssm_params_payload = {
         "nodeID": config["SSM"]["nodeID"],
-        "execution_type": config["SSM"]["execution_type"]
+        "execution_type": config["SSM"]["execution_type"],
+        "client_id": client_id
     }
     adapter_ip_ssm = get_adapter_ip_from_ssm(topic_ssm_params, ssm_params_payload)
-    print(adapter_ip_ssm)
-    validate_adapter_ip(adapter_ip, adapter_ip_ssm, agent_conf_file)
-    sys.exit(0)
+    # Parse the IP
+    if adapter_ip_ssm["Status"] == "connected":
+        try:
+            adapter_ip_ssm = adapter_ip_ssm["ssm_run_command"]["StandardOutputContent"].strip().split()[1]
+        except Exception as e:
+            logging.error("Cannot get the ip address for the agent from SSM with error message: {}".format(e))
+            exit_process(1)
+        validate_adapter_ip(adapter_ip, adapter_ip_ssm, agent_conf_file)
+    else:
+        logger.error("Adapter Offline")
+        exit_process(1)
 
     # Initialize Machine Monitoring
     # Collect the params
