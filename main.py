@@ -57,6 +57,46 @@ def get_adapter_ip_from_ssm(topic_ssm_params, ssm_params_payload):
     return adapter_ip_ssm
 
 
+def monitor_adapter_ip():
+
+    global config, client_id
+
+    # Get the adapter IP address
+    # TODO: Improve the way Host is identified
+    agent_conf_file = config["agent"]["cfg_file"]
+    with open(agent_conf_file, "r") as filehandle:
+        agent_conf = filehandle.readlines()
+        for conf in agent_conf:
+            if "Host" in conf:
+                adapter_ip = conf.strip().split("=")[-1].strip()
+
+    # Get the IP address from SSM
+    topic_ssm_params = config["SSM"]["topic_ssm_params"] + "/" + client_id
+    ssm_params_payload = {
+        "nodeID": config["SSM"]["nodeID"],
+        "execution_type": config["SSM"]["execution_type"],
+        "client_id": client_id
+    }
+    adapter_ip_ssm = get_adapter_ip_from_ssm(topic_ssm_params, ssm_params_payload)
+    # Parse the IP
+    if adapter_ip_ssm["Status"] == "connected":
+        try:
+            adapter_ip_ssm = adapter_ip_ssm["ssm_run_command"]["StandardOutputContent"].strip().split()[1]
+        except Exception as e:
+            logging.error("Cannot get the ip address for the agent from SSM with error message: {}".format(e))
+            exit_process(1)
+        validate_adapter_ip(adapter_ip, adapter_ip_ssm, agent_conf_file)
+    else:
+        logger.error("Adapter Offline")
+        exit_process(1)
+
+
+def periodically_check_adpater_ip():
+    while True:
+        monitor_adapter_ip()
+        time.sleep(10)
+
+
 def exit_process(code):
     manage_ctrlc()
     sys.exit(code)
@@ -272,34 +312,10 @@ if __name__ == '__main__':
                        shadow_client=shadow_client)
     initialize_device_shadows(cp=connection_params)
 
-    # Get the adapter IP address
-    # TODO: Improve the way Host is identified
-    agent_conf_file = config["agent"]["cfg_file"]
-    with open(agent_conf_file, "r") as filehandle:
-        agent_conf = filehandle.readlines()
-        for conf in agent_conf:
-            if "Host" in conf:
-                adapter_ip = conf.strip().split("=")[-1].strip()
-    # Get the IP address from SSM
-    # Send a MQTT message for the Lambda to process
-    topic_ssm_params = config["SSM"]["topic_ssm_params"] + "/" + client_id
-    ssm_params_payload = {
-        "nodeID": config["SSM"]["nodeID"],
-        "execution_type": config["SSM"]["execution_type"],
-        "client_id": client_id
-    }
-    adapter_ip_ssm = get_adapter_ip_from_ssm(topic_ssm_params, ssm_params_payload)
-    # Parse the IP
-    if adapter_ip_ssm["Status"] == "connected":
-        try:
-            adapter_ip_ssm = adapter_ip_ssm["ssm_run_command"]["StandardOutputContent"].strip().split()[1]
-        except Exception as e:
-            logging.error("Cannot get the ip address for the agent from SSM with error message: {}".format(e))
-            exit_process(1)
-        validate_adapter_ip(adapter_ip, adapter_ip_ssm, agent_conf_file)
-    else:
-        logger.error("Adapter Offline")
-        exit_process(1)
+    # Monitor the IP address of the adapter
+    monitor_adapter_ip()
+    # Enable Periodic monitoring of IP address
+    monitor_ip_thread = threading.Thread(target=periodically_check_adpater_ip, daemon=True)
 
     # Initialize Machine Monitoring
     # Collect the params
@@ -320,6 +336,7 @@ if __name__ == '__main__':
     # Initiate by stopping upload
     ds.change_shadow_value({"upload_enable": 0})
     exit_main = False
+    monitor_ip_thread.start()
     while True:
 
         # Get the shadow state
