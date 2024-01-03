@@ -28,7 +28,6 @@ def manage_ctrlc(*args):
     ds.change_shadow_value({"upload_enable": 0})
     exit_main = True
 
-    # TODO: Close MQTT Connections
     disconnect_future = mqtt_connection.disconnect()
     disconnect_future.result()
 
@@ -91,7 +90,7 @@ def monitor_adapter_ip():
         exit_process(1)
 
 
-def periodically_check_adpater_ip():
+def periodically_check_adapter_ip():
     while True:
         monitor_adapter_ip()
         time.sleep(60 * 60 * 6)
@@ -315,7 +314,7 @@ if __name__ == '__main__':
     # Monitor the IP address of the adapter
     monitor_adapter_ip()
     # Enable Periodic monitoring of IP address
-    monitor_ip_thread = threading.Thread(target=periodically_check_adpater_ip, daemon=True)
+    monitor_ip_thread = threading.Thread(target=periodically_check_adapter_ip, daemon=True)
 
     # Initialize Machine Monitoring
     # Collect the params
