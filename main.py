@@ -111,7 +111,7 @@ def validate_adapter_ip(adapter_ip, adapter_ip_ssm, agent_cfg_path):
             exit_process(1)
     for number in adapter_ip_ssm.split("."):
         if not bool(re.match(pattern, number)):
-            logger.warn("Invalid adapter ip addresses from SSM  mamanger")
+            logger.warn("Invalid adapter ip addresses from SSM  manager")
             exit_process(1)
 
     if adapter_ip != adapter_ip_ssm:
