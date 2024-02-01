@@ -8,7 +8,7 @@ AWS:
   shadow_name: mtcagent
 
 adapter:
-  machine_name: FANUC_ROBONANO
+  machine_name: FANUCROBONANO
   devices_xml:
     # ComponentStream level
     Controller:
@@ -35,7 +35,7 @@ adapter:
           - ACTUAL
 
 agent:
-  url: http://localhost:5001/current
+  url: http://localhost:5001
   cfg_file: /home/minlab/mtconnect/conf/agent.cfg
 
 SSM:

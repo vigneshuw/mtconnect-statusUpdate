@@ -43,6 +43,8 @@ python ./main.py --config=./config.yml
 
 ## Error Codes
 
+
+
 ## TODO
 - [ ] Improving the way the configuration file (agent.cfg) is read to determine the adapter ip address.
 - [ ] Improving the ability of the system to handle errors.

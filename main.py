@@ -58,16 +58,24 @@ def get_adapter_ip_from_ssm(topic_ssm_params, ssm_params_payload):
 
 def monitor_adapter_ip():
 
-    global config, client_id
+    global config, client_id, machine_name
 
     # Get the adapter IP address
     # TODO: Improve the way Host is identified
+    start_looking = False
     agent_conf_file = config["agent"]["cfg_file"]
     with open(agent_conf_file, "r") as filehandle:
         agent_conf = filehandle.readlines()
         for conf in agent_conf:
-            if "Host" in conf:
-                adapter_ip = conf.strip().split("=")[-1].strip()
+            if conf.strip() == machine_name:
+                start_looking = True
+
+            if start_looking:
+                if "Host" in conf:
+                    adapter_ip = conf.strip().split("=")[-1].strip()
+                    # Stop looking
+                    start_looking = False
+                    break
 
     # Get the IP address from SSM
     topic_ssm_params = config["SSM"]["topic_ssm_params"] + "/" + client_id
@@ -311,6 +319,9 @@ if __name__ == '__main__':
                        shadow_client=shadow_client)
     initialize_device_shadows(cp=connection_params)
 
+    # Get the name of machine for status update
+    machine_name = config["adapter"]["machine_name"]
+
     # Monitor the IP address of the adapter
     monitor_adapter_ip()
     # Enable Periodic monitoring of IP address
@@ -319,10 +330,10 @@ if __name__ == '__main__':
     # Initialize Machine Monitoring
     # Collect the params
     devices_xml = config["adapter"]["devices_xml"]
-    machine_status = MachineStateMonitor(machine_name=config["adapter"]["machine_name"], devices_xml=devices_xml)
+    machine_status = MachineStateMonitor(machine_name=machine_name, devices_xml=devices_xml)
 
     # Make a http request - To check availability
-    url = config["agent"]["url"]
+    url = config["agent"]["url"] + "/" + machine_name + "/current"
     response = requests.get(url)
     machine_status.update_machine_state(response)
     if not machine_status.machine_availability:
