@@ -75,9 +75,9 @@ Check the status of the service
 sudo systemctl status mtcagent_mqtt
 ```
 
-## Error Codes
+## Considerations
 
-
+1. For connecting to AWS-IotCore you will need the right certificates after creating a `thing` using the AWS console or command line. Check the `config.yml` file for the location and directory info for placing AWS device certificates.
 
 ## TODO
 - [ ] Improving the ability of the system to handle errors.
