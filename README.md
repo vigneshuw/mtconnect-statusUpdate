@@ -1,6 +1,8 @@
 # MTConnect Status Update
 
-We are using MTConnect to update the status of an Ultra-precision CNC machine - FANUC ROBONANO $\alpha$-0*i*B. The machine information can be found at the [Smart Manufacturing Website](https://smartmfg.me.wisc.edu/pages/dashboards/machine_monitoring/robonano1_ms.html) from MINLab.
+We are using MTConnect to update the status of an Ultra-precision CNC machine - FANUC ROBONANO $\alpha$-0*i*B. 
+
+The code in action can be found at the [Smart Manufacturing Website](https://smartmfg.me.wisc.edu/pages/dashboards/machine_monitoring/robonano1_ms.html) from MINLab (Manufacturing Innovation Network Laboratory).
 
 ## Highlights
 - The adapter was cloned from the official MTConnect repository and augmented
@@ -79,6 +81,7 @@ sudo systemctl status mtcagent_mqtt
 
 ## TODO
 - [ ] Improving the ability of the system to handle errors.
+- [ ] Elaborate set of error codes for troubleshooting
 - [ ] Eliminate the need to use AWS lambda functions to get the adapter IP address.
 - [ ] Improving the shadow document by providing more information on the device.
 - [ ] Ability to automatically update the `upload_enable` parameter on the shadow document, in case of abrupt connection interruption.
