@@ -39,7 +39,7 @@ The code in action can be found at the [Smart Manufacturing Website](https://sma
    1. IoT Core - To add things.
    2. Lambda function - For serverless approach to get the adapter's IP address if it is not static. **Note: This might not apply to your case. With our case being a research lab under the University's network, we were not able to set a static IP for the edge devices due to some restrictions. Hence, we use AWS as an intermediary to handle the changes in the adapter's IP address over time. Not the best approach, but it is a temporary fix at the moment.**  
    3. AWS System's Manager setup for both the agent and the adapter to continuously monitor the device's status remotely
-5. Depending on how the MTConnect agent is setup, you install one or both the services (`mtcagent.service`, `mtcagent_mqtt.service`) to the RaspberryPi to enable automatic start and stop at reboot, power loss, etc.
+5. Depending on how the MTConnect agent is setup, you need to install one or both the services (`mtcagent.service`, `mtcagent_mqtt.service`) to the RaspberryPi to enable automatic start and stop at reboot, power loss, etc.
    1. In our case, both the MTConnect agent and the Status Update run on the same device. Hence both the automation scripts were installed. The MTConnect agent runs in a Docker container. For more info, see https://github.com/mtconnect/cppagent
    2. If you need to run just the status update, install the service - `mtcagent_mqtt.service`, and ensure to update the `config.yml` file to locate the MTConnect agent correctly.
   
@@ -86,6 +86,10 @@ sudo systemctl status mtcagent_mqtt
 - [ ] Improving the shadow document by providing more information on the device.
 - [ ] Ability to automatically update the `upload_enable` parameter on the shadow document, in case of abrupt connection interruption.
 - [ ] Support for MTConnect streaming to continuously acquire data from the CNC machine using AWS Kinesis
+
+## Contact
+
+If you have any questions or need more information, please reach out to the owner of the repository.
 
 
 
